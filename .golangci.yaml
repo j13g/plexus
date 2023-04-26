@@ -1,0 +1,48 @@
+# Options for analysis running.
+run:
+  timeout: 5m
+  issues-exit-code: 2
+  tests: true
+linters:
+  disable-all: true
+  enable:
+  - asasalint
+  - asciicheck
+  - bidichk
+  - bodyclose
+  - contextcheck
+  - dupl
+  - durationcheck
+  - errcheck
+  - errchkjson
+  - errname
+  - errorlint
+  - exhaustive
+  - exportloopref
+  - forcetypeassert
+  - gci
+  - gocheckcompilerdirectives
+  - gocritic
+  - gofmt
+  - gofumpt
+  - goimports
+  - gosec
+  - gosimple
+  - govet
+  - ineffassign
+  - makezero
+  - nilerr
+  - noctx
+  - prealloc
+  - predeclared
+  - reassign
+  - revive
+  - staticcheck
+  - typecheck
+  - unconvert
+  - unused
+
+issues:
+  max-same-issues: 0
+  max-issues-per-linter: 0
+  fix: true
