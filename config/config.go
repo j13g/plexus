@@ -2,12 +2,10 @@ package config
 
 import (
 	"fmt"
-	"github.com/j13g/goutil/cli"
-	"github.com/j13g/goutil/cron"
 	"github.com/j13g/goutil/env"
 	"github.com/j13g/goutil/types"
-	"github.com/j13g/plexus/postbox"
 	"github.com/nats-io/nats.go"
+	"github.com/samber/do"
 )
 
 var Version = "UNKNOWN"
@@ -27,11 +25,7 @@ type Config struct {
 
 	CLIOutputFormat string `json:"cli_output_format"`
 
-	// what is dependency injection anyway? basically just configurable global variables, right?
-	CLI    *cli.CLI        `json:"-"`
-	Outbox *postbox.Outbox `json:"-"`
-	Inbox  *postbox.Inbox  `json:"-"`
-	Cron   *cron.Container `json:"-"`
+	Injector *do.Injector `json:"-"`
 }
 
 func (c *Config) NodeName() string {
@@ -39,6 +33,8 @@ func (c *Config) NodeName() string {
 }
 
 func (c *Config) LoadFromEnv(prefix string) {
+	c.Injector = do.New()
+
 	env.SetEnvPrefix(prefix)
 	c.AppVersion = Version
 

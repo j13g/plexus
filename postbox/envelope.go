@@ -14,8 +14,18 @@ type Envelope struct {
 	Name    string          `json:"n"`
 	Version string          `json:"v"`
 	TS      time.Time       `json:"t"`
-	Meta    map[string]any  `json:"m"`
-	Payload json.RawMessage `json:"p"`
+	Error   string          `json:"e,omitempty"`
+	Meta    map[string]any  `json:"m,omitempty"`
+	Payload json.RawMessage `json:"p,omitempty"`
+}
+
+func NewErrorEnvelope(err error) *Envelope {
+	return &Envelope{
+		Name:    "Error",
+		Version: "1.0.0",
+		TS:      time.Now().UTC(),
+		Error:   err.Error(),
+	}
 }
 
 func NewEnvelope[T Payload](payload T) (*Envelope, error) {
