@@ -21,27 +21,6 @@ type AppSetup struct {
 }
 
 var rootCmd = &cobra.Command{
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		cfg := config.Get()
-		var err error
-		cfg.NatsConn, err = natsutil.Connect()
-		if err != nil {
-			return err
-		}
-
-		// configure CLI output format
-		err = cli.SetOutputterByName(cfg.CLIOutputFormat)
-		if err != nil {
-			l := log.Get()
-			l.Error().Err(err).Str("format", cfg.CLIOutputFormat).Msg("failed to set CLI output format")
-			cli.SetOutputter(outputter.JSONOutputter{}) // using JSON output format as a fallback
-		}
-
-		cfg.Outbox = postbox.NewOutbox(cfg.NatsConn)
-		cfg.Inbox = postbox.NewInbox(cfg.NatsConn, cfg.AppName, cfg.AppVersion, cfg.NodeName())
-
-		return nil
-	},
 	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 		cfg := config.Get()
 		err := cfg.NatsConn.Drain()
@@ -59,24 +38,40 @@ func CLIMain(setup AppSetup) error {
 	cfg.AppName = setup.Name
 	cfg.AppVersion = setup.Version
 
-	cfg.CLI = cli.NewCLI(setup.Name).SetRoot(rootCmd)
-
+	// Logging
 	err := logSetup(cfg, setup)
 	if err != nil {
 		return err
 	}
-
 	l := log.Get()
 
+	// NATs, Outbox, Inbox
+	conn, err := natsutil.Connect()
+	if err != nil {
+		return err
+	}
+	cfg.NatsConn = conn
+
+	config.ProvideValue[*postbox.Outbox](postbox.NewOutbox(cfg.NatsConn))
+	config.ProvideValue[*postbox.Inbox](postbox.NewInbox(cfg.NatsConn, cfg.AppName, cfg.AppVersion, cfg.NodeName()))
+
+	// CLI
+	cliInstance := cli.NewCLI(setup.Name).SetRoot(rootCmd)
+	config.ProvideValue[*cli.CLI](cliInstance)
+	err = cli.SetOutputterByName(cfg.CLIOutputFormat)
+	if err != nil {
+		l := log.Get()
+		l.Error().Err(err).Str("format", cfg.CLIOutputFormat).Msg("failed to set CLI output format")
+		cli.SetOutputter(outputter.JSONOutputter{}) // using JSON output format as a fallback
+	}
+
+	// App-specific setup
 	l.Trace().Msg("running setup")
 	setup.SetupFunc()
 
+	// run CLI
 	l.Trace().Msg("running cli")
-
-	// add built in commands
-	showConfigCmd(cfg)
-
-	err = cfg.CLI.Run()
+	err = config.Invoke[*cli.CLI]().MustGet().Run()
 	if err != nil {
 		l.Error().Err(err).Msg("failed to run")
 		return err
@@ -103,13 +98,4 @@ func logSetup(cfg *config.Config, setup AppSetup) error {
 
 	log.SetupLogging(options...)
 	return nil
-}
-
-func showConfigCmd(cfg *config.Config) {
-	cfg.CLI.Add("showConfig", &cobra.Command{
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := config.Get()
-			return cli.Print(cfg)
-		},
-	})
 }

@@ -1,12 +1,13 @@
 package main
 
 import (
+	"github.com/j13g/goutil/cli"
 	"github.com/j13g/goutil/cron"
 	"github.com/j13g/goutil/log"
 	"github.com/j13g/goutil/sig"
+	"github.com/j13g/plexus/config"
 	"github.com/j13g/plexus/example/agent/handlers"
 	"github.com/j13g/plexus/example/agent/tasks"
-	"github.com/j13g/plexus/config"
 	"github.com/j13g/plexus/mainutil"
 	"github.com/j13g/plexus/postbox"
 	"github.com/spf13/cobra"
@@ -18,13 +19,13 @@ func main() {
 	mainutil.CLIMain(mainutil.AppSetup{
 		Name:      appName,
 		Version:   "UNKNOWN",
+		EnvPrefix: "PLEXUS",
 		SetupFunc: setup,
 	})
 }
 
 func setup() {
-	cfg := config.Get()
-	cfg.CLI.Add("start", &cobra.Command{
+	config.Invoke[*cli.CLI]().MustGet().Add("start", &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
 			l := log.Get()
 
@@ -49,27 +50,27 @@ func setup() {
 }
 
 func StartScheduledTasks() {
-	cfg := config.Get()
-	cfg.Cron = cron.NewContainer()
-	cfg.Cron.Add(tasks.GetHeartbeatTask())
-	cfg.Cron.Start()
+	c := cron.NewContainer()
+	c.Add(tasks.GetHeartbeatTask())
+	c.Start()
+
+	config.ProvideValue[*cron.Container](c)
 }
 
 func StopScheduledTasks() {
-	cfg := config.Get()
-	cfg.Cron.Stop()
+	config.Invoke[*cron.Container]().MustGet().Stop()
 }
 
 func StartMessageHandlers() {
 	cfg := config.Get()
-	router := cfg.Inbox.Router()
+	inbox := config.Invoke[*postbox.Inbox]().MustGet()
+	router := inbox.Router()
 	router.Register("Ping", "1.x", handlers.PingHandler)
 	router.Register("Echo", "1.x", handlers.EchoHandler)
 
-	cfg.Inbox.Start(postbox.NewSubjectSpec().AddMultiF("%s.%s.%s", cfg.AppName, cfg.NodeArea, cfg.NodeID))
+	inbox.Start(postbox.NewSubjectSpec().AddMultiF("%s.%s.%s", cfg.AppName, cfg.NodeArea, cfg.NodeID))
 }
 
 func StopMessageHandlers() {
-	cfg := config.Get()
-	cfg.Inbox.Stop()
+	config.Invoke[*postbox.Inbox]().MustGet().Stop()
 }
