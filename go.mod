@@ -6,6 +6,8 @@ require (
 	github.com/j13g/goutil v0.0.0-20230426020129-1d22d0590c23
 	github.com/nats-io/nats.go v1.25.0
 	github.com/rs/zerolog v1.29.0
+	github.com/samber/do v1.6.0
+	github.com/samber/mo v1.8.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.2
 )
@@ -22,7 +24,6 @@ require (
 	github.com/nats-io/nkeys v0.4.4 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/samber/mo v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/crypto v0.8.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
